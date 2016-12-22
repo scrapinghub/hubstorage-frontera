@@ -22,7 +22,7 @@ class HCFStates(MemoryStates):
         project = self._hs_client.get_project(self.projectid)
         self._collections = project.collections
         self._colname = colname + "_states"
-        self.logger = logging.getLogger("hcf.tates")
+        self.logger = logging.getLogger("hcf.states")
 
         if cleanup_on_start:
             self._cleanup()
