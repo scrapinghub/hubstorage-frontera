@@ -65,11 +65,14 @@ class HCFStates(MemoryStates):
             while True:
                 try:
                     prepared_keys.append("key=%s" % i.next())
-                    if len(prepared_keys) > 32:
+                    if len(prepared_keys) >= 32:
                         break
                 except StopIteration:
                     finished = True
                     break
+
+            if not prepared_keys:
+                break
 
             prepared_keys.append("meta=_key")
             params = {'method':'GET',
