@@ -3,7 +3,7 @@ import config
 from hcf_backend import HCFStates
 from frontera.core.models import Request
 from random import randint, choice
-from sys import maxint
+from sys import maxsize
 import logging
 
 
@@ -13,17 +13,17 @@ def generate_fprint():
 
 def check_states(states, fprints, objs):
     states.fetch(fprints)
-    objs_fresh = [Request(o.url, meta={'fingerprint': o.meta['fingerprint']}) for o in objs]
+    objs_fresh = [Request(o.url, meta={b'fingerprint': o.meta[b'fingerprint']}) for o in objs]
     states.set_states(objs_fresh)
     i1 = iter(objs)
     i2 = iter(objs_fresh)
 
     while True:
         try:
-            o1 = i1.next()
-            o2 = i2.next()
-            assert o1.meta['fingerprint'] == o2.meta['fingerprint']
-            assert o1.meta['state'] == o2.meta['state']
+            o1 = next(i1)
+            o2 = next(i2)
+            assert o1.meta[b'fingerprint'] == o2.meta[b'fingerprint']
+            assert o1.meta[b'state'] == o2.meta[b'state']
         except StopIteration:
             break
 
@@ -34,11 +34,11 @@ def test_states():
     objs = []
     fprints = []
     for i in range(0, 128):
-        o = Request('http://website.com/%d' % randint(0, maxint))
-        o.meta['fingerprint'] = generate_fprint()
-        o.meta['state'] = choice([HCFStates.NOT_CRAWLED, HCFStates.QUEUED, HCFStates.CRAWLED, HCFStates.ERROR])
+        o = Request('http://website.com/%d' % randint(0, maxsize))
+        o.meta[b'fingerprint'] = generate_fprint()
+        o.meta[b'state'] = choice([HCFStates.NOT_CRAWLED, HCFStates.QUEUED, HCFStates.CRAWLED, HCFStates.ERROR])
         objs.append(o)
-        fprints.append(o.meta['fingerprint'])
+        fprints.append(o.meta[b'fingerprint'])
 
     states.update_cache(objs)
     states.flush()
