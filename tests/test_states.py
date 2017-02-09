@@ -6,6 +6,8 @@ from random import randint, choice
 from sys import maxsize
 import logging
 
+from unittest import skipIf
+
 
 def generate_fprint():
     return ''.join(map(lambda x:choice('0123456789abcdef'), range(40)))
@@ -27,6 +29,9 @@ def check_states(states, fprints, objs):
         except StopIteration:
             break
 
+@skipIf(not config.API_KEY, "missing config API_KEY")
+@skipIf(not config.PROJECT_ID, "missing config PROJECT_ID")
+@skipIf(not config.FRONTIER_NAME, "missing config FRONTIER_NAME")
 def test_states():
     logging.basicConfig(level=logging.DEBUG)
     states = HCFStates(config.API_KEY, config.PROJECT_ID, config.FRONTIER_NAME, 256, True)
