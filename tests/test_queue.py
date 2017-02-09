@@ -12,7 +12,7 @@ def test_queue():
 
     queue.frontier_start()
 
-    r = Request(url="http://scrapinghub.com", meta={"fingerprint": "abcdef01234567890"})
+    r = Request(url="http://scrapinghub.com", meta={b"fingerprint": b"abcdef01234567890"})
     queue.schedule([("", 0.9, r, True)])
     sleep(4)
     result = queue.get_next_requests(256, 0)

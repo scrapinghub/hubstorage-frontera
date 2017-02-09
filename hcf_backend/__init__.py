@@ -11,6 +11,7 @@ from frontera.contrib.backends.memory import MemoryStates, MemoryMetadata
 from frontera.contrib.backends.partitioners import FingerprintPartitioner
 from frontera.core.components import Queue
 from hubstorage import HubstorageClient
+import six
 
 
 class HCFStates(MemoryStates):
@@ -40,10 +41,10 @@ class HCFStates(MemoryStates):
                 self.logger.error("%d %s", response.status_code, response.content)
                 self.logger.info(params)
             try:
-                r = loads(response.content)
+                r = loads(response.content.decode('utf-8'))
                 self.logger.debug("Removed %d, scanned %d", r["deleted"], r["scanned"])
                 nextstart = r.get('nextstart')
-            except ValueError, ve:
+            except ValueError as ve:
                 self.logger.debug(ve)
                 self.logger.debug("content: %s (%d)" % (response.content, len(response.content)))
             if not nextstart:
@@ -64,7 +65,7 @@ class HCFStates(MemoryStates):
             prepared_keys = []
             while True:
                 try:
-                    prepared_keys.append("key=%s" % i.next())
+                    prepared_keys.append("key=%s" % next(i))
                     if len(prepared_keys) >= 32:
                         break
                 except StopIteration:
@@ -85,12 +86,12 @@ class HCFStates(MemoryStates):
             if response.status_code != 200:
                 self.logger.error("%d %s", response.status_code, response.content)
                 self.logger.info(params)
-            for line in response.content.split('\n'):
+            for line in response.content.decode('utf-8').split('\n'):
                 if not line:
                     continue
                 try:
                     yield loads(line)
-                except ValueError, ve:
+                except ValueError as ve:
                     self.logger.debug(ve)
                     self.logger.debug("content: %s (%d)" % (line, len(line)))
             if finished:
@@ -113,7 +114,7 @@ class HCFStates(MemoryStates):
         count = 0
         start = time()
         try:
-            for fprint, state_val in self._cache.iteritems():
+            for fprint, state_val in six.iteritems(self._cache):
                 buffer.append({'_key': fprint, 'value':state_val})
                 if len(buffer) > 1024:
                     count += len(buffer)
@@ -254,7 +255,7 @@ class HCFQueue(Queue):
                             'created_at': datetime.utcnow(),
                             'depth': 0,
                         })
-                        request.meta.setdefault('scrapy_meta', {})
+                        request.meta.setdefault(b'scrapy_meta', {})
                         return_requests.append(request)
                 consumed.append(batch_id)
             if consumed:
@@ -270,14 +271,14 @@ class HCFQueue(Queue):
         self.logger.info('scheduled %d links' % scheduled)
 
     def _process_hcf_link(self, link, score):
-        link.meta.pop('origin_is_frontier', None)
+        link.meta.pop(b'origin_is_frontier', None)
         hcf_request = {'fp': getattr(link, 'meta', {}).get('hcf_fingerprint', link.url)}
         qdata = {'request': {}}
         for attr in ('method', 'headers', 'cookies', 'meta'):
             qdata['request'][attr] = getattr(link, attr)
         hcf_request['qdata'] = qdata
 
-        partition_id = self.partitioner.partition(link.meta['fingerprint'])
+        partition_id = self.partitioner.partition(link.meta[b'fingerprint'])
         slot = self.hcf_slot_prefix + str(partition_id)
         self.hcf.add_request(slot, hcf_request)
 
