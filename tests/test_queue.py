@@ -12,9 +12,12 @@ def test_queue():
 
     queue.frontier_start()
 
-    r = Request(url="http://scrapinghub.com", meta={b"fingerprint": b"abcdef01234567890"})
+    r = Request(url="http://scrapinghub.com", meta={b"fingerprint": b"abcdef01234567890", "native": "string test"})
     queue.schedule([("", 0.9, r, True)])
     sleep(4)
     result = queue.get_next_requests(256, 0)
     assert result[0].url == r.url
+    assert result[0].meta[b'fingerprint'] == r.meta[b'fingerprint']
+    assert result[0].meta["native"] == r.meta["native"]
+
     queue.frontier_stop()

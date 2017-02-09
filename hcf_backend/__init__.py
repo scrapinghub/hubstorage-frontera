@@ -9,6 +9,7 @@ from frontera import Request
 from frontera.contrib.backends import CommonBackend
 from frontera.contrib.backends.memory import MemoryStates, MemoryMetadata
 from frontera.contrib.backends.partitioners import FingerprintPartitioner
+from frontera.contrib.backends.remote.codecs.json import _convert_and_save_type, _convert_from_saved_type
 from frontera.core.components import Queue
 from hubstorage import HubstorageClient
 import six
@@ -249,7 +250,8 @@ class HCFQueue(Queue):
                 data = len(requests) == max_next_requests
                 self.logger.debug("got batch %s of size %d from HCF server" % (batch_id, len(requests)))
                 for fingerprint, qdata in requests:
-                    request = Request(qdata.get('url', fingerprint), **qdata['request'])
+                    decoded = _convert_from_saved_type(qdata)
+                    request = Request(decoded.get('url', fingerprint), **decoded['request'])
                     if request is not None:
                         request.meta.update({
                             'created_at': datetime.utcnow(),
@@ -273,11 +275,13 @@ class HCFQueue(Queue):
     def _process_hcf_link(self, link, score):
         link.meta.pop(b'origin_is_frontier', None)
         hcf_request = {'fp': getattr(link, 'meta', {}).get('hcf_fingerprint', link.url)}
-        qdata = {'request': {}}
-        for attr in ('method', 'headers', 'cookies', 'meta'):
-            qdata['request'][attr] = getattr(link, attr)
-        hcf_request['qdata'] = qdata
-
+        qdata = {'request': {
+                    'method': link.method,
+                    'headers': link.headers,
+                    'cookies': link.cookies,
+                    'meta': link.meta}
+                }
+        hcf_request['qdata'] = _convert_and_save_type(qdata)
         partition_id = self.partitioner.partition(link.meta[b'fingerprint'])
         slot = self.hcf_slot_prefix + str(partition_id)
         self.hcf.add_request(slot, hcf_request)
