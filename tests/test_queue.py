@@ -4,8 +4,12 @@ from hcf_backend import HCFQueue
 from frontera.core.models import Request
 from time import sleep
 import logging
+from unittest import skipIf
 
 
+@skipIf(not config.API_KEY, "missing config API_KEY")
+@skipIf(not config.PROJECT_ID, "missing config PROJECT_ID")
+@skipIf(not config.FRONTIER_NAME, "missing config FRONTIER_NAME")
 def test_queue():
     logging.basicConfig(level=logging.DEBUG)
     queue = HCFQueue(config.API_KEY, config.PROJECT_ID, config.FRONTIER_NAME, 10000, 1, 1, "", True)
